@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "devai"
+version = "0.1.0"
+description = "AI Development Agent Platform - Multi-agent system for software development"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+dependencies = [
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+sdk = [
+    "claude-code-sdk>=0.0.20",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+
+[project.scripts]
+devai = "devai.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["devai*"]
