@@ -1,0 +1,54 @@
+SOFTWARE LICENSE AGREEMENT
+
+PARTIES:
+Licensor: SaaS Corp ("Licensor")
+Licensee: Enterprise Inc ("Licensee")
+
+EFFECTIVE DATE: March 1, 2024
+
+1. LICENSE GRANT
+Licensor grants Licensee a non-exclusive, non-transferable license
+to use the Software ("CloudSuite Enterprise") for internal business
+purposes only.
+
+2. FEES AND PAYMENT
+- Annual license fee: $250,000
+- Payment due: Upon execution of this agreement
+- Annual increases: Licensor may increase fees by up to 10% annually
+
+3. TERM AND RENEWAL
+- Initial term: 1 year from the Effective Date
+- AUTO-RENEWAL: This agreement automatically renews for successive
+  1-year periods unless written notice of non-renewal is provided
+  at least 180 days before the end of the current term.
+- Price lock: Renewal pricing is not locked and subject to
+  then-current rates.
+
+4. EARLY TERMINATION
+Early termination by Licensee requires:
+- Payment of 75% of the remaining contract value
+- 90 days written notice
+- Return of all licensed materials
+
+5. SUPPORT AND MAINTENANCE
+- Standard support included (business hours only)
+- Premium 24/7 support available for additional $50,000/year
+- Response time SLA: 4 business hours for critical issues
+
+6. DATA AND SECURITY
+- Licensor maintains SOC 2 Type II compliance
+- Data is stored in US-based data centers
+- Licensee data remains property of Licensee
+
+7. LIABILITY
+- Licensor's liability is limited to fees paid in the prior 12 months
+- Licensor is not liable for indirect, consequential, or punitive damages
+- Licensee indemnifies Licensor against third-party claims
+
+8. GOVERNING LAW
+This agreement is governed by the laws of California.
+
+SIGNATURES:
+_________________________    _________________________
+SaaS Corp                    Enterprise Inc
+Date: ___________           Date: ___________

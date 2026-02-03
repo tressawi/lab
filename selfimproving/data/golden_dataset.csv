@@ -1,0 +1,4 @@
+case_id,contract_file,expected_recommendation,expected_findings,assertions
+case_001,sample_contracts/contract_1.txt,MODIFY,"missing Exhibit A with detailed scope;no indemnity clause;no dispute resolution mechanism;no limitation of liability",indemnity;liability
+case_002,sample_contracts/contract_2.txt,MODIFY,"long payment terms Net-90;no milestone payments puts risk on consultant;broad non-compete clause;short termination notice period",payment;non-compete
+case_003,sample_contracts/contract_3.txt,MODIFY,"auto-renewal with 180 day notice;75% early termination penalty;no price lock on renewal;one-sided indemnification",auto-renewal;termination penalty

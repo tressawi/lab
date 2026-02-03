@@ -1,0 +1,39 @@
+SERVICE AGREEMENT
+
+This agreement is entered into between Client Corp ("Client") and
+Service Provider Inc ("Provider").
+
+1. SERVICES
+Provider agrees to deliver software development services as specified
+in Exhibit A, including:
+- Custom web application development
+- Database design and implementation
+- API integration services
+
+2. PAYMENT
+Client agrees to pay Provider $50,000 upon completion of services.
+Payment is due within 30 days of invoice.
+
+3. TERM
+This agreement is effective for 12 months from the signing date
+and may be extended by mutual written agreement.
+
+4. CONFIDENTIALITY
+Both parties agree to maintain confidentiality of proprietary
+information exchanged during the course of this agreement.
+
+5. TERMINATION
+Either party may terminate this agreement with 30 days written notice.
+Upon termination, Client shall pay for all work completed to date.
+
+6. INTELLECTUAL PROPERTY
+All work product created under this agreement shall be owned by Client
+upon full payment.
+
+7. GOVERNING LAW
+This agreement shall be governed by the laws of the State of Delaware.
+
+SIGNATURES:
+_________________________    _________________________
+Client Corp                  Service Provider Inc
+Date: ___________           Date: ___________

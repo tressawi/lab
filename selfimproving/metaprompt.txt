@@ -1,0 +1,80 @@
+
+You are an expert in prompt optimization. Given the original baseline prompt and the following associated metadata (such as model inputs, outputs, evaluation labels and explanations),
+generate a revised version of the original prompt that would likely improve results with respect to the evaluation labels.
+Your goal is to align the prompt with the feedback and evaluation criteria.
+
+BELOW IS THE ORIGINAL BASELINE PROMPT
+************* start prompt *************
+
+
+
+You are a contract review specialist. Analyze the following contract and provide:
+
+1. RECOMMENDATION: One of APPROVE, MODIFY, or REJECT
+2. REASONING: Brief explanation of your recommendation
+3. KEY_FINDINGS: List of important clauses or issues found
+
+Contract to review:
+{contract_text}
+
+Respond in JSON format:
+{{
+  "recommendation": "APPROVE|MODIFY|REJECT",
+  "reasoning": "...",
+  "key_findings": ["...", "..."],
+  "suggested_changes": ["..."]
+}}
+
+************* end prompt *************
+
+BELOW ARE THE EXAMPLES USING THE ABOVE PROMPT
+************* start example data *************
+
+
+
+
+                    Example 1
+
+                    Data for baseline prompt: ['SERVICE AGREEMENT\n\nThis agreement is entered into between Client Corp ("Client") and\nService Provider Inc ("Provider").\n\n1. SERVICES\nProvider agrees to deliver software development services as specified\nin Exhibit A, including:\n- Custom web application development\n- Database design and implementation\n- API integration services\n\n2. PAYMENT\nClient agrees to pay Provider $50,000 upon completion of services.\nPayment is due within 30 days of invoice.\n\n3. TERM\nThis agreement is effective for 12 months from the signing date\nand may be extended by mutual written agreement.\n\n4. CONFIDENTIALITY\nBoth parties agree to maintain confidentiality of proprietary\ninformation exchanged during the course of this agreement.\n\n5. TERMINATION\nEither party may terminate this agreement with 30 days written notice.\nUpon termination, Client shall pay for all work completed to date.\n\n6. INTELLECTUAL PROPERTY\nAll work product created under this agreement shall be owned by Client\nupon full payment.\n\n7. GOVERNING LAW\nThis agreement shall be governed by the laws of the State of Delaware.\n\nSIGNATURES:\n_________________________    _________________________\nClient Corp                  Service Provider Inc\nDate: ___________           Date: ___________\n']
+
+                    LLM Output using baseline prompt:  'recommendation': 'MODIFY', 'reasoning': 'While the agreement covers key aspects, several important areas are vaguely defined or missing entirely, increasing the risk for both parties. Significant clarification is needed regarding the scope of services, payment milestones, intellectual property rights prior to full payment, and warranty/liability. The current version favors the Client significantly in terms of IP ownership.', 'key_findings': ['Vague Scope of Services: Exhibit A needs to be highly detailed and specific about deliverables and acceptance criteria.', 'Payment Schedule: A single payment upon completion is risky. Milestone-based payments should be implemented.', 'Intellectual Property: Ownership transfers to Client *upon full payment*. What happens to the IP if the contract is terminated before full payment? This needs clarification. Provider could be giving up rights without getting paid.', "Termination Clause: The 'work completed to date' clause is vague. It needs to define how 'work completed' is determined and valued in case of termination.", 'No Warranty or Liability Clause: The agreement lacks any warranty on the quality of the software or limitations on liability for defects or damages arising from the use of the software.', 'Confidentiality obligations are mutual but lack specifics regarding the definition of confidential information, permitted use and duration of obligation.', 'Missing Dispute Resolution: The contract lacks a clause detailing dispute resolution mechanisms (mediation, arbitration).', "No Indemnification Clause: There's no protection for either party against third-party claims arising from the services performed.", 'No Force Majeure Clause: The agreement lacks a clause addressing unforeseen circumstances that may prevent performance.'], 'suggested_changes': ['**Exhibit A (Scope of Services):** Provide a detailed breakdown of tasks, deliverables, acceptance criteria, and timelines. Be as specific as possible.', '**Payment Schedule:** Implement a milestone-based payment schedule tied to completion of specific deliverables. Define clear payment amounts and due dates for each milestone.', '**Intellectual Property:** Add a clause specifying IP ownership before full payment (e.g., Provider retains ownership until final payment, client gets a license to use the software). Define terms of IP usage if the agreement is terminated before full payment.', "**Termination Clause:** Define the method for calculating 'work completed to date' (e.g., based on hours worked, completed milestones). Add a clause specifying payment terms for partially completed milestones.", "**Warranty Clause:** Include a warranty clause detailing the period for which the software is guaranteed to function as intended and the Provider's obligations for fixing defects.", "**Liability Clause:** Add a liability clause that limits the Provider's liability for damages arising from the use of the software.", "**Confidentiality Clause:** Clearly define 'proprietary information' and outline specific obligations, permitted uses, and duration of confidentiality.", '**Dispute Resolution:** Include a clause specifying a process for resolving disputes (e.g., mediation, arbitration).', '**Indemnification Clause:** Add a clause requiring each party to indemnify the other against third-party claims arising from its actions or omissions.', '**Force Majeure Clause:** Include a clause excusing performance in the event of unforeseen circumstances (e.g., natural disasters, war).', 'Add a Change Order clause to address how changes to the scope of the services will be handled, including their impact on the payment schedule.'] 
+
+                    Output level feedback:
+                
+feedback: Needs to look at the location the contract will be executed in
+
+                    Example 2
+
+                    Data for baseline prompt: ['SERVICE AGREEMENT\n\nThis agreement is entered into between Client Corp ("Client") and\nService Provider Inc ("Provider").\n\n1. SERVICES\nProvider agrees to deliver software development services as specified\nin Exhibit A, including:\n- Custom web application development\n- Database design and implementation\n- API integration services\n\n2. PAYMENT\nClient agrees to pay Provider $50,000 upon completion of services.\nPayment is due within 30 days of invoice.\n\n3. TERM\nThis agreement is effective for 12 months from the signing date\nand may be extended by mutual written agreement.\n\n4. CONFIDENTIALITY\nBoth parties agree to maintain confidentiality of proprietary\ninformation exchanged during the course of this agreement.\n\n5. TERMINATION\nEither party may terminate this agreement with 30 days written notice.\nUpon termination, Client shall pay for all work completed to date.\n\n6. INTELLECTUAL PROPERTY\nAll work product created under this agreement shall be owned by Client\nupon full payment.\n\n7. GOVERNING LAW\nThis agreement shall be governed by the laws of the State of Delaware.\n\nSIGNATURES:\n_________________________    _________________________\nClient Corp                  Service Provider Inc\nDate: ___________           Date: ___________\n']
+
+                    LLM Output using baseline prompt:  'recommendation': 'MODIFY', 'reasoning': "While the agreement covers key aspects like services, payment, and intellectual property, it lacks crucial provisions that could lead to disputes. Specifically, the absence of a detailed scope of work, acceptance criteria, and limitation of liability clauses poses significant risks. The governing law of Delaware is generally favorable for corporations, but its suitability depends on the location of performance and the parties' connections to Delaware.", 'key_findings': ['Lack of a detailed scope of work and acceptance criteria (Exhibit A is mentioned but unspecified).', 'No clearly defined process for dispute resolution.', 'Missing clauses addressing warranties, indemnification, and limitation of liability.', "The payment terms are vague regarding what constitutes 'completion of services'.", "No specific protection for Provider's pre-existing intellectual property (if any)."], 'suggested_changes': ["Replace 'as specified in Exhibit A' with a detailed description of the scope of work directly in the agreement or ensure Exhibit A is clearly defined and attached, including specific deliverables and timelines.", 'Add a clause defining acceptance criteria for deliverables and a process for addressing any issues.', 'Include a clear dispute resolution mechanism, such as mediation or arbitration.', 'Add clauses covering warranties (or disclaimers), indemnification, and limitation of liability to protect both parties.', "Clarify the meaning of 'completion of services' in the Payment section, potentially tying it to acceptance of deliverables.", 'Add a clause clarifying ownership of pre-existing intellectual property of Provider, and any licenses granted to Client.', 'Consider adding a force majeure clause to address unforeseen circumstances.', 'Specify a clear process for change requests to the scope of work, including how changes will be documented and priced.'] 
+
+                    Output level feedback:
+                
+feedback: does not look at geographic location
+
+                    Example 4
+
+                    Data for baseline prompt: ['SERVICE AGREEMENT\n\nThis agreement is entered into between Client Corp ("Client") and\nService Provider Inc ("Provider").\n\n1. SERVICES\nProvider agrees to deliver software development services as specified\nin Exhibit A, including:\n- Custom web application development\n- Database design and implementation\n- API integration services\n\n2. PAYMENT\nClient agrees to pay Provider $50,000 upon completion of services.\nPayment is due within 30 days of invoice.\n\n3. TERM\nThis agreement is effective for 12 months from the signing date\nand may be extended by mutual written agreement.\n\n4. CONFIDENTIALITY\nBoth parties agree to maintain confidentiality of proprietary\ninformation exchanged during the course of this agreement.\n\n5. TERMINATION\nEither party may terminate this agreement with 30 days written notice.\nUpon termination, Client shall pay for all work completed to date.\n\n6. INTELLECTUAL PROPERTY\nAll work product created under this agreement shall be owned by Client\nupon full payment.\n\n7. GOVERNING LAW\nThis agreement shall be governed by the laws of the State of Delaware.\n\nSIGNATURES:\n_________________________    _________________________\nClient Corp                  Service Provider Inc\nDate: ___________           Date: ___________\n']
+
+                    LLM Output using baseline prompt:  'recommendation': 'MODIFY', 'reasoning': "The contract is too simplistic and lacks crucial clauses to protect both parties adequately. It needs more detail regarding scope, deliverables, acceptance criteria, warranties, and limitations of liability. While Delaware governing law is common, it's crucial to confirm its suitability based on the actual locations of Client and Provider operations.", 'key_findings': ['Vague scope of services (Exhibit A not provided and list in section 1 is insufficient)', "Payment terms are tied only to 'completion' with no clear definition or acceptance process.", "Unclear definition of 'work completed to date' upon termination, potentially leading to disputes.", 'Lack of warranties regarding the quality or functionality of the software.', 'Absence of limitation of liability clause, exposing Provider to potentially unlimited damages.', 'No clause addressing dispute resolution.', 'No specifics on data security and privacy, especially important for web applications and databases.', 'The agreement automatically renews for 12 months, which may be unfavorable if one party no longer needs services.'], 'suggested_changes': ['Replace the vague description in Section 1 with a detailed Exhibit A outlining specific deliverables, functionalities, timelines, and acceptance criteria. Refer to that exhibit specifically in Section 1.', "Add a detailed payment schedule tied to specific milestones or deliverables, not just 'completion'.", 'Include a clear acceptance process with defined timelines for review and feedback.', "Define 'work completed to date' with specific measurable criteria for partial completion.", 'Add warranties regarding the quality, functionality, and performance of the software, including a specific warranty period.', 'Include a limitation of liability clause to cap the potential damages for which Provider may be responsible.', 'Add a dispute resolution clause outlining the process for resolving disagreements, such as mediation or arbitration.', 'Incorporate clauses addressing data security, privacy, and compliance with relevant regulations (e.g., GDPR, CCPA) if applicable.', 'Modify the Term section to remove automatic renewal or require explicit written consent for renewal, with sufficient notice period.', 'Add a clause specifying ownership of pre-existing intellectual property (if any) used in the project. Ensure Provider has the right to use any third-party tools or components.', "Include a clause addressing confidentiality beyond simply 'maintaining confidentiality', detailing permitted uses of confidential information and duration of the obligation."], 'geographic_considerations': "While Delaware is a common choice for governing law due to its established corporate law, consider the actual locations of Client and Provider. If both are located in a different jurisdiction, using that jurisdiction's law may be more practical and cost-effective for enforcement. Additionally, consider any specific state or local laws that might affect software development contracts or data privacy (e.g., California Consumer Privacy Act (CCPA)). The absence of a detailed Exhibit A may violate software laws specific to a region. Consult local counsel if necessary." 
+
+                    Output level feedback:
+                
+feedback: needs to check for indemnity clauses and liability limits
+************* end example data *************
+
+HERE ARE SOME ANNOTATIONS THAT MAY BE HELPFUL:
+{annotations}
+
+FINAL INSTRUCTIONS
+Iterate on the original prompt (above) with a new prompt that will improve the results, based on the examples and feedback above.
+
+A common best practice in prompt optimization is to add guidelines and the most helpful few shot examples.
+
+Note: Make sure to include the variables from the original prompt, which are wrapped in either single brackets or double brackets (e.g.
+{var}). If you fail to include these variables, the LLM will not be able to access the required data.
+Do not add any single or double brackets around anything other than the variables from the original prompt. The only curly brackets that should be used are the ones that wrap the variables from the original prompt.
+Make sure to copy paste the exact return instructions from the original prompt. Do not add any brackets here. 
+
+YOUR NEW PROMPT:
