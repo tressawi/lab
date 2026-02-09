@@ -89,6 +89,44 @@ Provide:
 """
 
 
+STANDALONE_TEST_TEMPLATE = """## Task: Explore Codebase and Generate Tests
+
+### Description
+{description}
+
+### Working Directory
+{working_dir}
+
+### Requirements
+1. Explore the project structure to understand the codebase
+2. Identify the language, framework, and existing test infrastructure
+3. Determine the appropriate test framework (pytest, unittest, jest, etc.)
+4. Generate comprehensive tests for the codebase
+5. Cover happy paths, edge cases, and error conditions
+6. Follow existing test patterns if any exist; otherwise establish sensible conventions
+
+### Process
+1. Explore the project root: read README, config files (pyproject.toml, package.json, setup.py, etc.)
+2. Map out the module structure and key source files
+3. Identify entry points and core business logic
+4. Check for existing tests and test configuration
+5. Install test dependencies if needed (e.g., pytest, coverage)
+6. Generate test files following the project's conventions
+7. Run the tests to verify they pass
+8. Report coverage metrics
+
+### Output
+Provide:
+- Project structure overview
+- Test framework chosen and why
+- Test files created
+- Coverage summary
+- Key test cases and what they verify
+- Any untested scenarios or concerns
+- Confidence level in test coverage
+"""
+
+
 class TestAgent(BaseAgent):
     """
     Test Agent for test generation and quality assurance.
@@ -224,4 +262,32 @@ Provide:
 - Gaps in coverage
 - Recommended additional tests
 """
+        return await self.run(task, working_dir, task_id)
+
+    async def explore_and_test(
+        self,
+        description: str,
+        working_dir: str = ".",
+        task_id: Optional[str] = None
+    ) -> AgentResult:
+        """
+        Explore a codebase and generate tests from scratch (standalone mode).
+
+        Unlike generate_tests(), this does not assume any prior Dev Agent
+        context. It explores the project structure first, then generates
+        appropriate tests.
+
+        Args:
+            description: What to test or focus areas
+            working_dir: Target project directory
+            task_id: Task ID for tracking
+
+        Returns:
+            AgentResult with exploration findings and test generation details
+        """
+        task = STANDALONE_TEST_TEMPLATE.format(
+            description=description,
+            working_dir=working_dir
+        )
+
         return await self.run(task, working_dir, task_id)

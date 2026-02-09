@@ -164,6 +164,59 @@ Provide a structured security report:
 """
 
 
+STANDALONE_SCAN_TEMPLATE = """## Task: Comprehensive Security Audit
+
+### Description
+{description}
+
+### Working Directory
+{working_dir}
+
+### Requirements
+Perform a full security audit of the codebase:
+
+1. **Project Discovery**
+   - Explore the project structure, language, and framework
+   - Identify dependency files (requirements.txt, package.json, etc.)
+   - Locate configuration files and environment handling
+
+2. **Secrets Detection**
+   - Scan for hardcoded API keys, tokens, passwords
+   - Check .env files, config files, connection strings
+   - Look for private keys or certificates
+
+3. **OWASP Top 10 Scan**
+   - Injection vulnerabilities (SQL, command, template)
+   - Authentication and access control issues
+   - Sensitive data exposure
+   - Security misconfiguration
+
+4. **Code Security Review**
+   - Input validation and output encoding
+   - Error handling (information disclosure)
+   - Cryptography usage
+   - Safe file operations
+
+5. **Dependency Security**
+   - Check for known vulnerable dependencies
+   - Outdated packages with security advisories
+
+### Process
+1. Explore project root and map the codebase
+2. Read source files systematically
+3. Run available security tools if applicable
+4. Classify findings by severity (CRITICAL, HIGH, MEDIUM, LOW, INFO)
+5. Make final decision: BLOCK / WARN / APPROVE
+
+### Output
+Provide a structured security report with:
+- Summary of files scanned
+- Findings with severity, category, file location, and recommendation
+- Final decision: BLOCK / WARN / APPROVE
+- Required actions if BLOCK
+"""
+
+
 class CyberAgent(BaseAgent):
     """
     Cyber Agent for security scanning and vulnerability detection.
@@ -413,6 +466,34 @@ Report:
 - Severity of each vulnerability
 - Recommended updates
 """
+        return await self.run(task, working_dir, task_id)
+
+    async def full_scan(
+        self,
+        description: str,
+        working_dir: str = ".",
+        task_id: Optional[str] = None
+    ) -> AgentResult:
+        """
+        Run a comprehensive security audit on an entire codebase (standalone mode).
+
+        Unlike scan(), this does not assume pipeline context or specific
+        changed files. It explores the full project and performs a complete
+        security review.
+
+        Args:
+            description: Focus areas or general audit instruction
+            working_dir: Target project directory
+            task_id: Task ID for tracking
+
+        Returns:
+            AgentResult with security findings and decision
+        """
+        task = STANDALONE_SCAN_TEMPLATE.format(
+            description=description,
+            working_dir=working_dir
+        )
+
         return await self.run(task, working_dir, task_id)
 
     def parse_decision(self, result: AgentResult) -> tuple[str, list[str]]:

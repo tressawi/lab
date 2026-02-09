@@ -3,28 +3,54 @@
 DevAI - AI Development Agent CLI
 
 Usage:
-    # Single agent mode
-    devai --task "Add email validation" --type feature
-    devai -t "Fix login bug" --type bugfix
+    # Interactive mode (default)
+    devai
+    devai --dir /path/to/project
+
+    # Use @agent mentions to select agents:
+    #   > @test Generate comprehensive tests
+    #   > @cyber Run a security audit
+    #   > @dev Fix the login bug        (or just type without prefix)
+
+    # One-shot mode
+    devai --task "@test Generate tests" --dir /path/to/project
+    devai --task "@cyber Security audit" --dir /path/to/project
+    devai --task "Fix login bug" --type bugfix
 
     # Pipeline mode (Dev -> Test with approvals)
     devai --pipeline --task "Add user authentication"
-
-    # Interactive mode
-    devai --interactive
-
-    # Or as a module
-    python -m devai --task "..."
 """
 
 import asyncio
 import argparse
+import re
 import sys
 from pathlib import Path
 
 from devai.agents.dev_agent import DevAgent
 from devai.agents.test_agent import TestAgent
+from devai.agents.cyber_agent import CyberAgent
 from devai.pipeline import DevTestPipeline
+
+
+def parse_agent_mention(task: str) -> tuple[str, str]:
+    """
+    Parse @agent mention prefix from a task string.
+
+    Supports @dev, @test, @cyber. If no prefix, defaults to "dev".
+
+    Args:
+        task: The raw task string, possibly starting with @agent
+
+    Returns:
+        Tuple of (agent_name, remaining_task)
+    """
+    match = re.match(r"^@(dev|test|cyber)\s+", task, re.IGNORECASE)
+    if match:
+        agent = match.group(1).lower()
+        remaining = task[match.end():].strip()
+        return agent, remaining
+    return "dev", task
 
 
 async def run_task(args: argparse.Namespace) -> int:
@@ -64,6 +90,77 @@ async def run_task(args: argparse.Namespace) -> int:
     if result.session_id:
         print(f"Session ID: {result.session_id}")
     print(f"Status: {'SUCCESS' if result.success else 'FAILED'}")
+    print(f"{'='*60}\n")
+
+    if result.error:
+        print(f"Error: {result.error}\n")
+        return 1
+
+    print(result.content)
+    return 0
+
+
+async def run_test_task(args: argparse.Namespace, task: str) -> int:
+    """Run a standalone test agent task."""
+    agent = TestAgent(store_path=args.store)
+
+    print(f"\n{'='*60}")
+    print("DevAI - TEST AGENT")
+    print(f"Working directory: {args.dir}")
+    print(f"{'='*60}\n")
+
+    result = await agent.explore_and_test(
+        description=task,
+        working_dir=args.dir,
+        task_id=args.task_id
+    )
+
+    # Display result
+    print(f"\n{'='*60}")
+    print(f"Task ID: {result.task_id}")
+    if result.session_id:
+        print(f"Session ID: {result.session_id}")
+    print(f"Status: {'SUCCESS' if result.success else 'FAILED'}")
+    print(f"{'='*60}\n")
+
+    if result.error:
+        print(f"Error: {result.error}\n")
+        return 1
+
+    print(result.content)
+    return 0
+
+
+async def run_cyber_task(args: argparse.Namespace, task: str) -> int:
+    """Run a standalone cyber agent task."""
+    agent = CyberAgent(store_path=args.store)
+
+    print(f"\n{'='*60}")
+    print("DevAI - CYBER AGENT")
+    print(f"Working directory: {args.dir}")
+    print(f"{'='*60}\n")
+
+    result = await agent.full_scan(
+        description=task,
+        working_dir=args.dir,
+        task_id=args.task_id
+    )
+
+    # Display result
+    print(f"\n{'='*60}")
+    print(f"Task ID: {result.task_id}")
+    if result.session_id:
+        print(f"Session ID: {result.session_id}")
+    print(f"Status: {'SUCCESS' if result.success else 'FAILED'}")
+
+    # Parse and display security decision
+    if result.success:
+        decision, blockers = agent.parse_decision(result)
+        print(f"Security Decision: {decision}")
+        if blockers:
+            for blocker in blockers:
+                print(f"  - {blocker}")
+
     print(f"{'='*60}\n")
 
     if result.error:
@@ -119,8 +216,10 @@ async def run_pipeline(args: argparse.Namespace) -> int:
 
 
 async def run_interactive(args: argparse.Namespace) -> int:
-    """Run in interactive mode with pipeline support."""
+    """Run in interactive mode with @agent mention support."""
     dev_agent = DevAgent(store_path=args.store)
+    test_agent = TestAgent(store_path=args.store)
+    cyber_agent = CyberAgent(store_path=args.store)
     pipeline = DevTestPipeline(store_path=args.store)
 
     print(f"\n{'='*60}")
@@ -128,8 +227,13 @@ async def run_interactive(args: argparse.Namespace) -> int:
     print(f"{'='*60}")
     print(f"Working directory: {args.dir}")
     print()
+    print("Agents:  @dev (default)  @test  @cyber")
+    print()
     print("Commands:")
-    print("  <task>           - Run task with Dev Agent only")
+    print("  @test <task>     - Run task with Test Agent")
+    print("  @cyber <task>    - Run task with Cyber Agent")
+    print("  @dev <task>      - Run task with Dev Agent")
+    print("  <task>           - Run task with Dev Agent (default)")
     print("  pipeline <task>  - Run Dev -> Test pipeline with approvals")
     print("  resume           - Continue the last session")
     print("  exit/quit        - Stop")
@@ -169,21 +273,40 @@ async def run_interactive(args: argparse.Namespace) -> int:
                 if not task:
                     print("No task provided.")
                     continue
+                agent_name = "dev"
             else:
-                task = user_input
+                agent_name, task = parse_agent_mention(user_input)
 
-            print("\nWorking...\n")
+            print(f"\n[{agent_name}] Working...\n")
 
-            result = await dev_agent.custom_task(
-                description=task,
-                working_dir=args.dir,
-                resume=resume
-            )
+            if agent_name == "test":
+                result = await test_agent.explore_and_test(
+                    description=task,
+                    working_dir=args.dir
+                )
+            elif agent_name == "cyber":
+                result = await cyber_agent.full_scan(
+                    description=task,
+                    working_dir=args.dir
+                )
+            else:
+                result = await dev_agent.custom_task(
+                    description=task,
+                    working_dir=args.dir,
+                    resume=resume
+                )
 
             if result.error:
                 print(f"\nError: {result.error}")
             else:
                 print(f"\n{result.content}")
+                # Show security decision for cyber agent
+                if agent_name == "cyber" and result.success:
+                    decision, blockers = cyber_agent.parse_decision(result)
+                    print(f"\nSecurity Decision: {decision}")
+                    if blockers:
+                        for blocker in blockers:
+                            print(f"  - {blocker}")
                 print(f"\n[Task ID: {result.task_id}]")
 
         except KeyboardInterrupt:
@@ -203,40 +326,37 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Single agent - implement a feature
-  python main.py --type feature --task "Add user authentication"
+  # Interactive mode (default - just run devai)
+  devai
+  devai --dir /path/to/project
 
-  # Single agent - fix a bug
-  python main.py --type bugfix --task "Login fails with special characters"
+  # In interactive mode, use @agent mentions:
+  #   > @test Generate comprehensive tests
+  #   > @cyber Run a security audit
+  #   > @dev Fix the login bug
+  #   > Fix the login bug              (defaults to @dev)
 
-  # Pipeline mode - Dev Agent -> approval -> Test Agent -> approval
-  python main.py --pipeline --task "Add email validation" --type feature
+  # One-shot mode with @agent mentions
+  devai --task "@test Generate tests" --dir /path/to/project
+  devai --task "@cyber Security audit" --dir /path/to/project
+  devai --task "Add feature" --type feature
 
-  # Pipeline with auto-approve (skip human approvals)
-  python main.py --pipeline --task "Add logging" --auto-approve
-
-  # Interactive mode
-  python main.py --interactive
-
-Pipeline Flow:
-  1. Dev Agent implements the requested feature/fix
-  2. Human reviews and approves the code changes
-  3. Test Agent generates comprehensive tests
-  4. Human reviews and approves the tests
-  5. Pipeline complete
+  # Pipeline mode - Dev -> approval -> Test -> approval
+  devai --pipeline --task "Add email validation" --type feature
+  devai --pipeline --task "Add logging" --auto-approve
         """
     )
 
     parser.add_argument(
         "--task", "-t",
-        help="Task description"
+        help="Task description (prefix with @test or @cyber to select agent)"
     )
 
     parser.add_argument(
         "--type",
         choices=["feature", "bugfix", "refactor", "review", "explore", "custom"],
         default="feature",
-        help="Type of task (default: feature)"
+        help="Type of task for dev agent (default: feature)"
     )
 
     parser.add_argument(
@@ -271,7 +391,7 @@ Pipeline Flow:
     parser.add_argument(
         "--interactive", "-i",
         action="store_true",
-        help="Run in interactive mode"
+        help="Run in interactive mode (this is the default when no --task is given)"
     )
 
     parser.add_argument(
@@ -282,9 +402,9 @@ Pipeline Flow:
 
     args = parser.parse_args()
 
-    # Validate arguments
-    if not args.interactive and not args.task:
-        parser.error("--task is required unless using --interactive mode")
+    # Pipeline mode requires --task
+    if args.pipeline and not args.task:
+        parser.error("--task is required for pipeline mode")
 
     # Ensure working directory exists
     work_dir = Path(args.dir)
@@ -293,12 +413,20 @@ Pipeline Flow:
         sys.exit(1)
 
     # Run appropriate mode
-    if args.interactive:
-        exit_code = asyncio.run(run_interactive(args))
-    elif args.pipeline:
+    if args.pipeline:
         exit_code = asyncio.run(run_pipeline(args))
+    elif args.task:
+        # One-shot mode: parse @agent mention from task
+        agent_name, task = parse_agent_mention(args.task)
+        if agent_name == "test":
+            exit_code = asyncio.run(run_test_task(args, task))
+        elif agent_name == "cyber":
+            exit_code = asyncio.run(run_cyber_task(args, task))
+        else:
+            exit_code = asyncio.run(run_task(args))
     else:
-        exit_code = asyncio.run(run_task(args))
+        # Default: interactive mode
+        exit_code = asyncio.run(run_interactive(args))
 
     sys.exit(exit_code)
 
