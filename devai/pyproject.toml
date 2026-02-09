@@ -24,5 +24,6 @@ dev = [
 [project.scripts]
 devai = "devai.cli:main"
 
-[tool.setuptools.packages.find]
-include = ["devai*"]
+[tool.setuptools]
+packages = ["devai", "devai.agents", "devai.agents.utilities", "devai.prompts", "devai.reusable_components", "devai.shared_context"]
+package-dir = {"devai" = "."}
