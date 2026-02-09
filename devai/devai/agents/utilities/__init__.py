@@ -1,4 +1,4 @@
-"""Hooks for agent lifecycle events"""
+"""Utilities for agent lifecycle events and audit logging."""
 
 from .audit import get_audit_hooks, log_tool_use
 

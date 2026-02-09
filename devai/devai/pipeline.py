@@ -11,7 +11,7 @@ from .agents.test_agent import TestAgent
 from .agents.cyber_agent import CyberAgent
 from .agents.base import AgentResult
 from .approval import ApprovalGate, require_approval, ApprovalStatus
-from .context.store import ContextStore
+from .shared_context.store import ContextStore
 
 
 class PipelineStage(Enum):
