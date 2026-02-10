@@ -277,3 +277,112 @@ async def require_approval(
             raise PermissionError(f"Approval rejected: {comments}")
 
     return request
+
+
+async def require_dual_approval(
+    gate: ApprovalGate,
+    agent: str,
+    action: str,
+    description: str,
+    details: Optional[dict] = None,
+    authorized_approvers: Optional[list[str]] = None
+) -> tuple[ApprovalRequest, ApprovalRequest]:
+    """
+    Require two different approvers for sensitive operations.
+
+    This enforces separation of duties for regulated environments,
+    particularly production deployments.
+
+    Args:
+        gate: ApprovalGate instance
+        agent: Name of the agent requesting approval
+        action: Type of action requiring approval
+        description: Human-readable description
+        details: Additional details about the request
+        authorized_approvers: Optional list of authorized approvers
+
+    Returns:
+        Tuple of (first_approval, second_approval)
+
+    Raises:
+        PermissionError: If either approval is rejected
+    """
+    print("\n" + "=" * 60)
+    print("DUAL APPROVAL REQUIRED")
+    print("=" * 60)
+    print("This action requires approval from TWO different approvers.")
+    print("=" * 60 + "\n")
+
+    # First approval
+    print("[Approval 1 of 2]")
+    request1 = gate.request_approval(
+        agent,
+        action,
+        f"[Primary] {description}",
+        details
+    )
+    approved1, comments1 = prompt_for_approval(request1)
+
+    if not approved1:
+        request1 = gate.reject(request1.request_id, "user", comments1)
+        raise PermissionError(f"First approval rejected: {comments1}")
+
+    request1 = gate.approve(request1.request_id, "user", comments1)
+    first_approver = request1.approver
+    print(f"\n First approval granted by: {first_approver}\n")
+
+    # Second approval (must be different person)
+    print("[Approval 2 of 2]")
+    print(f"Note: Must be different from first approver ({first_approver})")
+
+    details_with_context = details.copy() if details else {}
+    details_with_context["first_approver"] = first_approver
+    details_with_context["requires_different_approver"] = True
+
+    while True:
+        request2 = gate.request_approval(
+            agent,
+            f"{action}_secondary",
+            f"[Secondary] {description}",
+            details_with_context
+        )
+        approved2, comments2 = prompt_for_approval(request2)
+
+        if not approved2:
+            request2 = gate.reject(request2.request_id, "user", comments2)
+            raise PermissionError(f"Second approval rejected: {comments2}")
+
+        # For CLI, we need to ask who the second approver is
+        second_approver = input("Enter your username/email: ").strip()
+
+        if second_approver == first_approver:
+            print(f"\n Error: Second approver must be different from {first_approver}")
+            print("Please have a different person approve.\n")
+            continue
+
+        # Check against authorized approvers if provided
+        if authorized_approvers and second_approver not in authorized_approvers:
+            print(f"\n Error: {second_approver} is not an authorized approver")
+            print(f"Authorized approvers: {', '.join(authorized_approvers)}\n")
+            continue
+
+        request2 = gate.approve(request2.request_id, second_approver, comments2)
+        break
+
+    print(f"\n Second approval granted by: {second_approver}")
+    print("\n Dual approval complete\n")
+
+    return request1, request2
+
+
+# Common approval action types for CI/CD
+class ApprovalAction:
+    """Standard approval action types."""
+    CODE_REVIEW = "code_review"
+    TEST_REVIEW = "test_review"
+    SECURITY_REVIEW = "security_review"
+    DESIGN_REVIEW = "design_review"
+    DEPLOYMENT_DEV = "deployment_dev"
+    DEPLOYMENT_STAGING = "deployment_staging"
+    DEPLOYMENT_PROD = "deployment_prod"
+    ROLLBACK = "rollback"

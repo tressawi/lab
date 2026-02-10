@@ -114,6 +114,163 @@ def get_audit_hooks() -> dict[str, list[Callable]]:
     }
 
 
+# CI/CD specific audit events
+
+async def log_build_trigger(
+    job_name: str,
+    build_number: int,
+    triggered_by: str,
+    pipeline_id: str,
+    context: dict
+) -> None:
+    """
+    Log when a Jenkins build is triggered.
+
+    Args:
+        job_name: Jenkins job name
+        build_number: Build number
+        triggered_by: Agent or user that triggered the build
+        pipeline_id: Pipeline ID for correlation
+        context: Additional context
+    """
+    log_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "event": "build_trigger",
+        "job_name": job_name,
+        "build_number": build_number,
+        "triggered_by": triggered_by,
+        "pipeline_id": pipeline_id,
+        "task_id": context.get("task_id"),
+    }
+
+    log_file = Path(context.get("store_path", "./context_store")) / "audit.jsonl"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(log_file, "a") as f:
+        f.write(json.dumps(log_entry) + "\n")
+
+
+async def log_artifact_upload(
+    artifact_path: str,
+    repository: str,
+    version: str,
+    sha256: str,
+    uploaded_by: str,
+    pipeline_id: str,
+    context: dict
+) -> None:
+    """
+    Log when an artifact is uploaded to Artifactory.
+
+    Args:
+        artifact_path: Path in the repository
+        repository: Repository name
+        version: Artifact version
+        sha256: SHA-256 checksum (critical for compliance)
+        uploaded_by: Agent or user that uploaded
+        pipeline_id: Pipeline ID for correlation
+        context: Additional context
+    """
+    log_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "event": "artifact_upload",
+        "artifact_path": artifact_path,
+        "repository": repository,
+        "version": version,
+        "sha256": sha256,
+        "uploaded_by": uploaded_by,
+        "pipeline_id": pipeline_id,
+        "task_id": context.get("task_id"),
+    }
+
+    log_file = Path(context.get("store_path", "./context_store")) / "audit.jsonl"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(log_file, "a") as f:
+        f.write(json.dumps(log_entry) + "\n")
+
+
+async def log_deployment(
+    environment: str,
+    artifact_version: str,
+    deployed_by: str,
+    approved_by: list[str],
+    pipeline_id: str,
+    status: str,
+    context: dict
+) -> None:
+    """
+    Log deployment events with full approval chain.
+
+    Args:
+        environment: Target environment (dev, staging, prod)
+        artifact_version: Deployed artifact version
+        deployed_by: Agent that performed deployment
+        approved_by: List of approvers
+        pipeline_id: Pipeline ID for correlation
+        status: Deployment status (success, failed)
+        context: Additional context
+    """
+    log_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "event": "deployment",
+        "environment": environment,
+        "artifact_version": artifact_version,
+        "deployed_by": deployed_by,
+        "approved_by": approved_by,
+        "approval_count": len(approved_by),
+        "pipeline_id": pipeline_id,
+        "status": status,
+        "task_id": context.get("task_id"),
+    }
+
+    log_file = Path(context.get("store_path", "./context_store")) / "audit.jsonl"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(log_file, "a") as f:
+        f.write(json.dumps(log_entry) + "\n")
+
+
+async def log_rollback(
+    environment: str,
+    from_version: str,
+    to_version: str,
+    reason: str,
+    initiated_by: str,
+    approved_by: str,
+    context: dict
+) -> None:
+    """
+    Log rollback events.
+
+    Args:
+        environment: Target environment
+        from_version: Current version being replaced
+        to_version: Version being rolled back to
+        reason: Reason for rollback
+        initiated_by: Agent or user that initiated rollback
+        approved_by: Approver for the rollback
+        context: Additional context
+    """
+    log_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "event": "rollback",
+        "environment": environment,
+        "from_version": from_version,
+        "to_version": to_version,
+        "reason": reason,
+        "initiated_by": initiated_by,
+        "approved_by": approved_by,
+        "task_id": context.get("task_id"),
+    }
+
+    log_file = Path(context.get("store_path", "./context_store")) / "audit.jsonl"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(log_file, "a") as f:
+        f.write(json.dumps(log_entry) + "\n")
+
+
 def read_audit_log(
     store_path: str = "./context_store",
     task_id: str | None = None,

@@ -30,14 +30,15 @@ from pathlib import Path
 from devai.agents.dev_agent import DevAgent
 from devai.agents.test_agent import TestAgent
 from devai.agents.cyber_agent import CyberAgent
-from devai.pipeline import DevTestPipeline
+from devai.agents.cicd_agent import CICDAgent, Environment
+from devai.pipeline import DevTestPipeline, FullCICDPipeline
 
 
 def parse_agent_mention(task: str) -> tuple[str, str]:
     """
     Parse @agent mention prefix from a task string.
 
-    Supports @dev, @test, @cyber. If no prefix, defaults to "dev".
+    Supports @dev, @test, @cyber, @cicd. If no prefix, defaults to "dev".
 
     Args:
         task: The raw task string, possibly starting with @agent
@@ -45,7 +46,7 @@ def parse_agent_mention(task: str) -> tuple[str, str]:
     Returns:
         Tuple of (agent_name, remaining_task)
     """
-    match = re.match(r"^@(dev|test|cyber)\s+", task, re.IGNORECASE)
+    match = re.match(r"^@(dev|test|cyber|cicd)\s+", task, re.IGNORECASE)
     if match:
         agent = match.group(1).lower()
         remaining = task[match.end():].strip()
@@ -171,6 +172,37 @@ async def run_cyber_task(args: argparse.Namespace, task: str) -> int:
     return 0
 
 
+async def run_cicd_task(args: argparse.Namespace, task: str) -> int:
+    """Run a standalone CI/CD agent task."""
+    agent = CICDAgent(store_path=args.store)
+
+    print(f"\n{'='*60}")
+    print("DevAI - CI/CD AGENT")
+    print(f"Working directory: {args.dir}")
+    print(f"{'='*60}\n")
+
+    result = await agent.run(
+        task=task,
+        working_dir=args.dir,
+        task_id=args.task_id
+    )
+
+    # Display result
+    print(f"\n{'='*60}")
+    print(f"Task ID: {result.task_id}")
+    if result.session_id:
+        print(f"Session ID: {result.session_id}")
+    print(f"Status: {'SUCCESS' if result.success else 'FAILED'}")
+    print(f"{'='*60}\n")
+
+    if result.error:
+        print(f"Error: {result.error}\n")
+        return 1
+
+    print(result.content)
+    return 0
+
+
 async def run_pipeline(args: argparse.Namespace) -> int:
     """
     Run the Dev -> Test pipeline with human approval gates.
@@ -181,7 +213,11 @@ async def run_pipeline(args: argparse.Namespace) -> int:
     3. Test Agent generates tests
     4. Human reviews and approves Test Agent's work
     """
-    pipeline = DevTestPipeline(store_path=args.store)
+    # Use FullCICDPipeline if deploying, otherwise use DevTestPipeline
+    if hasattr(args, 'deploy') and args.deploy:
+        pipeline = FullCICDPipeline(store_path=args.store)
+    else:
+        pipeline = DevTestPipeline(store_path=args.store)
 
     print(f"\n{'='*60}")
     print("DevAI - PIPELINE MODE")
@@ -197,14 +233,40 @@ async def run_pipeline(args: argparse.Namespace) -> int:
     print("  2. Dev Review  - Human approves code changes")
     print("  3. Test Agent  - Generate tests")
     print("  4. Test Review - Human approves tests")
+    if hasattr(args, 'deploy') and args.deploy:
+        print("  5. Cyber Agent - Security scan")
+        print("  6. Security Gate - BLOCK/WARN/APPROVE")
+        print("  7. Build      - Jenkins build (if configured)")
+        print("  8. Deploy     - Deploy to environments")
     print()
 
-    result = await pipeline.run(
-        task=args.task,
-        task_type=args.type,
-        working_dir=args.dir,
-        require_approvals=not args.auto_approve
-    )
+    # Build deploy_to list from args
+    deploy_to = None
+    if hasattr(args, 'deploy') and args.deploy:
+        if args.deploy == "all":
+            deploy_to = ["dev", "staging", "prod"]
+        else:
+            deploy_to = [args.deploy]
+
+    # Get jenkins job if specified
+    jenkins_job = getattr(args, 'jenkins_job', None)
+
+    if deploy_to:
+        result = await pipeline.run(
+            task=args.task,
+            task_type=args.type,
+            working_dir=args.dir,
+            require_approvals=not args.auto_approve,
+            deploy_to=deploy_to,
+            jenkins_job=jenkins_job
+        )
+    else:
+        result = await pipeline.run(
+            task=args.task,
+            task_type=args.type,
+            working_dir=args.dir,
+            require_approvals=not args.auto_approve
+        )
 
     if not result.success:
         print(f"\nPipeline failed at stage: {result.stage.value}")
@@ -220,6 +282,7 @@ async def run_interactive(args: argparse.Namespace) -> int:
     dev_agent = DevAgent(store_path=args.store)
     test_agent = TestAgent(store_path=args.store)
     cyber_agent = CyberAgent(store_path=args.store)
+    cicd_agent = CICDAgent(store_path=args.store)
     pipeline = DevTestPipeline(store_path=args.store)
 
     print(f"\n{'='*60}")
@@ -227,11 +290,12 @@ async def run_interactive(args: argparse.Namespace) -> int:
     print(f"{'='*60}")
     print(f"Working directory: {args.dir}")
     print()
-    print("Agents:  @dev (default)  @test  @cyber")
+    print("Agents:  @dev (default)  @test  @cyber  @cicd")
     print()
     print("Commands:")
     print("  @test <task>     - Run task with Test Agent")
     print("  @cyber <task>    - Run task with Cyber Agent")
+    print("  @cicd <task>     - Run task with CI/CD Agent")
     print("  @dev <task>      - Run task with Dev Agent")
     print("  <task>           - Run task with Dev Agent (default)")
     print("  pipeline <task>  - Run Dev -> Test pipeline with approvals")
@@ -289,6 +353,11 @@ async def run_interactive(args: argparse.Namespace) -> int:
                     description=task,
                     working_dir=args.dir
                 )
+            elif agent_name == "cicd":
+                result = await cicd_agent.run(
+                    task=task,
+                    working_dir=args.dir
+                )
             else:
                 result = await dev_agent.custom_task(
                     description=task,
@@ -333,17 +402,26 @@ Examples:
   # In interactive mode, use @agent mentions:
   #   > @test Generate comprehensive tests
   #   > @cyber Run a security audit
+  #   > @cicd Deploy to staging
   #   > @dev Fix the login bug
   #   > Fix the login bug              (defaults to @dev)
 
   # One-shot mode with @agent mentions
   devai --task "@test Generate tests" --dir /path/to/project
   devai --task "@cyber Security audit" --dir /path/to/project
+  devai --task "@cicd Trigger build" --dir /path/to/project
   devai --task "Add feature" --type feature
 
   # Pipeline mode - Dev -> approval -> Test -> approval
   devai --pipeline --task "Add email validation" --type feature
   devai --pipeline --task "Add logging" --auto-approve
+
+  # Full CI/CD Pipeline - includes build and deployment
+  devai --pipeline --task "Add feature" --deploy staging
+  devai --pipeline --task "Release v1.2" --deploy prod --jenkins-job my-app-build
+
+  # Rollback
+  devai --task "@cicd Rollback to 1.0.141" --deploy prod --artifact-version 1.0.141
         """
     )
 
@@ -400,6 +478,29 @@ Examples:
         help="Path to context store (default: ./context_store)"
     )
 
+    # CI/CD arguments
+    parser.add_argument(
+        "--deploy",
+        choices=["dev", "staging", "prod", "all"],
+        help="Deploy after successful pipeline (requires --pipeline)"
+    )
+
+    parser.add_argument(
+        "--jenkins-job",
+        help="Jenkins job name to trigger"
+    )
+
+    parser.add_argument(
+        "--artifact-version",
+        help="Specific artifact version to deploy"
+    )
+
+    parser.add_argument(
+        "--rollback",
+        action="store_true",
+        help="Rollback to previous version (use with --deploy and --artifact-version)"
+    )
+
     args = parser.parse_args()
 
     # Pipeline mode requires --task
@@ -422,6 +523,8 @@ Examples:
             exit_code = asyncio.run(run_test_task(args, task))
         elif agent_name == "cyber":
             exit_code = asyncio.run(run_cyber_task(args, task))
+        elif agent_name == "cicd":
+            exit_code = asyncio.run(run_cicd_task(args, task))
         else:
             exit_code = asyncio.run(run_task(args))
     else:

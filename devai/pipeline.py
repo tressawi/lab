@@ -24,6 +24,15 @@ class PipelineStage(Enum):
     TEST_APPROVAL = "test_approval"
     CYBER = "cyber"
     CYBER_APPROVAL = "cyber_approval"
+    # CI/CD stages
+    BUILD = "build"
+    ARTIFACT_UPLOAD = "artifact_upload"
+    DEPLOY_DEV = "deploy_dev"
+    DEPLOY_STAGING = "deploy_staging"
+    DEPLOY_STAGING_APPROVAL = "deploy_staging_approval"
+    DEPLOY_PROD = "deploy_prod"
+    DEPLOY_PROD_APPROVAL = "deploy_prod_approval"
+    # Terminal stages
     BLOCKED = "blocked"
     COMPLETE = "complete"
     FAILED = "failed"
@@ -43,6 +52,12 @@ class PipelineResult:
     approvals: list[dict] = field(default_factory=list)
     success: bool = True
     error: Optional[str] = None
+    # CI/CD results
+    cicd_result: Optional[AgentResult] = None
+    build_number: Optional[int] = None
+    artifact_version: Optional[str] = None
+    artifact_sha256: Optional[str] = None
+    deployment_results: dict = field(default_factory=dict)  # {env: result}
 
 
 class DevTestCyberPipeline:
@@ -445,3 +460,337 @@ class DevTestCyberPipeline:
 
 # Backwards compatibility alias
 DevTestPipeline = DevTestCyberPipeline
+
+
+class FullCICDPipeline(DevTestCyberPipeline):
+    """
+    Full pipeline: Design -> Dev -> Test -> Cyber -> Build -> Deploy
+
+    Extends DevTestCyberPipeline with CI/CD stages for Jenkins builds,
+    Artifactory artifact management, and environment deployments.
+    """
+
+    def __init__(
+        self,
+        store_path: str = "./context_store",
+        jenkins_config: Optional[dict] = None,
+        artifactory_config: Optional[dict] = None,
+        deployment_config: Optional[dict] = None
+    ):
+        super().__init__(store_path)
+
+        # Import here to avoid circular imports
+        from .agents.cicd_agent import CICDAgent
+
+        self.cicd_agent = CICDAgent(
+            store_path=store_path,
+            jenkins_config=jenkins_config,
+            artifactory_config=artifactory_config
+        )
+        self.deployment_config = deployment_config or {}
+
+    async def run(
+        self,
+        task: str,
+        task_type: str = "feature",
+        working_dir: str = ".",
+        require_approvals: bool = True,
+        skip_design: bool = False,
+        deploy_to: Optional[list[str]] = None,
+        jenkins_job: Optional[str] = None,
+        artifact_path: Optional[str] = None
+    ) -> PipelineResult:
+        """
+        Run the full Design -> Dev -> Test -> Cyber -> Build -> Deploy pipeline.
+
+        Args:
+            task: Task description
+            task_type: Type of task (feature, bugfix, refactor)
+            working_dir: Directory to work in
+            require_approvals: Whether to require human approvals
+            skip_design: Skip design phase
+            deploy_to: List of environments to deploy to ["dev", "staging", "prod"]
+            jenkins_job: Jenkins job name to trigger
+            artifact_path: Path to artifact for upload (if not using Jenkins)
+
+        Returns:
+            PipelineResult with outcomes from all stages
+        """
+        # Run parent pipeline stages (Design -> Dev -> Test -> Cyber)
+        result = await super().run(
+            task=task,
+            task_type=task_type,
+            working_dir=working_dir,
+            require_approvals=require_approvals,
+            skip_design=skip_design
+        )
+
+        # If parent pipeline failed, return early
+        if not result.success:
+            return result
+
+        # Continue with CI/CD stages if deploy_to is specified
+        if deploy_to:
+            result = await self._run_cicd_stages(
+                result=result,
+                working_dir=working_dir,
+                deploy_to=deploy_to,
+                require_approvals=require_approvals,
+                jenkins_job=jenkins_job,
+                artifact_path=artifact_path
+            )
+
+        return result
+
+    async def _run_cicd_stages(
+        self,
+        result: PipelineResult,
+        working_dir: str,
+        deploy_to: list[str],
+        require_approvals: bool,
+        jenkins_job: Optional[str] = None,
+        artifact_path: Optional[str] = None
+    ) -> PipelineResult:
+        """
+        Run CI/CD stages after security approval.
+
+        Args:
+            result: Result from parent pipeline
+            working_dir: Working directory
+            deploy_to: Environments to deploy to
+            require_approvals: Whether to require approvals
+            jenkins_job: Jenkins job to trigger
+            artifact_path: Artifact path for upload
+
+        Returns:
+            Updated PipelineResult
+        """
+        from .agents.cicd_agent import Environment
+        from .approval import require_dual_approval
+
+        pipeline_id = result.pipeline_id
+
+        # ============================================================
+        # Stage 9: Build (Jenkins)
+        # ============================================================
+        if jenkins_job:
+            result.stage = PipelineStage.BUILD
+            print("\n[STAGE 9] CI/CD Agent - Triggering Jenkins Build...")
+            print("-" * 40)
+
+            try:
+                build_result = await self.cicd_agent.trigger_build(
+                    job_name=jenkins_job,
+                    parameters={"TASK": result.dev_result.task_id if result.dev_result else ""},
+                    working_dir=working_dir,
+                    task_id=f"{pipeline_id}-build",
+                    pipeline_id=pipeline_id
+                )
+
+                result.cicd_result = build_result
+
+                if not build_result.success:
+                    result.stage = PipelineStage.FAILED
+                    result.success = False
+                    result.error = f"Build failed: {build_result.error}"
+                    return result
+
+                print(f"\n{build_result.content}")
+
+                # Extract build number from result (simplified parsing)
+                for line in build_result.content.split("\n"):
+                    if "Build Number:" in line:
+                        try:
+                            result.build_number = int(line.split(":")[-1].strip())
+                        except ValueError:
+                            pass
+
+            except Exception as e:
+                result.stage = PipelineStage.FAILED
+                result.success = False
+                result.error = f"Build error: {str(e)}"
+                return result
+
+        # ============================================================
+        # Stage 10: Artifact Upload (Artifactory)
+        # ============================================================
+        if artifact_path:
+            result.stage = PipelineStage.ARTIFACT_UPLOAD
+            print("\n[STAGE 10] CI/CD Agent - Uploading Artifact...")
+            print("-" * 40)
+
+            # Generate version from build number or timestamp
+            import time
+            version = f"1.0.{result.build_number}" if result.build_number else f"1.0.{int(time.time())}"
+
+            try:
+                upload_result = await self.cicd_agent.upload_artifact(
+                    artifact_path=artifact_path,
+                    version=version,
+                    working_dir=working_dir,
+                    task_id=f"{pipeline_id}-upload",
+                    pipeline_id=pipeline_id
+                )
+
+                if not upload_result.success:
+                    result.stage = PipelineStage.FAILED
+                    result.success = False
+                    result.error = f"Artifact upload failed: {upload_result.error}"
+                    return result
+
+                result.artifact_version = version
+                print(f"\n{upload_result.content}")
+
+                # Extract SHA-256 from result
+                for line in upload_result.content.split("\n"):
+                    if "SHA-256:" in line:
+                        result.artifact_sha256 = line.split(":")[-1].strip()
+
+            except Exception as e:
+                result.stage = PipelineStage.FAILED
+                result.success = False
+                result.error = f"Artifact upload error: {str(e)}"
+                return result
+
+        # ============================================================
+        # Deployment Stages
+        # ============================================================
+        for env_name in deploy_to:
+            env = Environment(env_name.lower())
+
+            if env == Environment.DEV:
+                # Dev: auto-deploy
+                result.stage = PipelineStage.DEPLOY_DEV
+                print(f"\n[STAGE] CI/CD Agent - Deploying to {env_name}...")
+                print("-" * 40)
+
+                deploy_result = await self.cicd_agent.deploy(
+                    environment=env,
+                    artifact_version=result.artifact_version or "latest",
+                    artifact_sha256=result.artifact_sha256 or "",
+                    working_dir=working_dir,
+                    task_id=f"{pipeline_id}-deploy-{env_name}",
+                    pipeline_id=pipeline_id,
+                    approved_by=[]  # No approval needed for dev
+                )
+
+                result.deployment_results[env_name] = deploy_result.success
+                if not deploy_result.success:
+                    print(f"\nWarning: {env_name} deployment failed: {deploy_result.error}")
+
+            elif env == Environment.STAGING:
+                # Staging: single approval
+                result.stage = PipelineStage.DEPLOY_STAGING_APPROVAL
+
+                if require_approvals:
+                    print(f"\n[STAGE] Staging Deployment Approval Required")
+                    print("-" * 40)
+
+                    try:
+                        approval = await require_approval(
+                            self.approval_gate,
+                            agent="cicd",
+                            action="deployment_staging",
+                            description=f"Deploy {result.artifact_version} to staging",
+                            details={
+                                "artifact_version": result.artifact_version,
+                                "artifact_sha256": result.artifact_sha256,
+                                "pipeline_id": pipeline_id
+                            }
+                        )
+                        result.approvals.append(approval.to_dict())
+                        approver = approval.approver or "user"
+
+                    except PermissionError as e:
+                        result.stage = PipelineStage.FAILED
+                        result.success = False
+                        result.error = f"Staging deployment rejected: {str(e)}"
+                        return result
+                else:
+                    approver = "auto-approved"
+
+                result.stage = PipelineStage.DEPLOY_STAGING
+                print(f"\n[STAGE] CI/CD Agent - Deploying to staging...")
+                print("-" * 40)
+
+                deploy_result = await self.cicd_agent.deploy(
+                    environment=env,
+                    artifact_version=result.artifact_version or "latest",
+                    artifact_sha256=result.artifact_sha256 or "",
+                    working_dir=working_dir,
+                    task_id=f"{pipeline_id}-deploy-staging",
+                    pipeline_id=pipeline_id,
+                    approved_by=[approver]
+                )
+
+                result.deployment_results["staging"] = deploy_result.success
+
+            elif env == Environment.PROD:
+                # Production: dual approval
+                result.stage = PipelineStage.DEPLOY_PROD_APPROVAL
+
+                if require_approvals:
+                    print(f"\n[STAGE] Production Deployment - DUAL APPROVAL Required")
+                    print("-" * 40)
+
+                    try:
+                        approval1, approval2 = await require_dual_approval(
+                            self.approval_gate,
+                            agent="cicd",
+                            action="deployment_prod",
+                            description=f"Deploy {result.artifact_version} to PRODUCTION",
+                            details={
+                                "artifact_version": result.artifact_version,
+                                "artifact_sha256": result.artifact_sha256,
+                                "pipeline_id": pipeline_id,
+                                "environment": "PRODUCTION"
+                            }
+                        )
+                        result.approvals.append(approval1.to_dict())
+                        result.approvals.append(approval2.to_dict())
+                        approvers = [approval1.approver or "user1", approval2.approver or "user2"]
+
+                    except PermissionError as e:
+                        result.stage = PipelineStage.FAILED
+                        result.success = False
+                        result.error = f"Production deployment rejected: {str(e)}"
+                        return result
+                else:
+                    approvers = ["auto-approved-1", "auto-approved-2"]
+
+                result.stage = PipelineStage.DEPLOY_PROD
+                print(f"\n[STAGE] CI/CD Agent - Deploying to PRODUCTION...")
+                print("-" * 40)
+
+                deploy_result = await self.cicd_agent.deploy(
+                    environment=env,
+                    artifact_version=result.artifact_version or "latest",
+                    artifact_sha256=result.artifact_sha256 or "",
+                    working_dir=working_dir,
+                    task_id=f"{pipeline_id}-deploy-prod",
+                    pipeline_id=pipeline_id,
+                    approved_by=approvers
+                )
+
+                result.deployment_results["prod"] = deploy_result.success
+
+        # ============================================================
+        # Complete
+        # ============================================================
+        result.stage = PipelineStage.COMPLETE
+        result.success = True
+
+        print("\n" + "=" * 60)
+        print("FULL CI/CD PIPELINE COMPLETE")
+        print("=" * 60)
+        print(f"Pipeline ID: {pipeline_id}")
+        if result.build_number:
+            print(f"Build Number: {result.build_number}")
+        if result.artifact_version:
+            print(f"Artifact Version: {result.artifact_version}")
+        if result.deployment_results:
+            print(f"Deployments: {result.deployment_results}")
+        print(f"Approvals: {len(result.approvals)}")
+        print("=" * 60 + "\n")
+
+        return result
