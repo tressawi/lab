@@ -148,7 +148,7 @@ class CICDAgent(BaseAgent):
         Returns:
             AgentResult with build status and details
         """
-        from ..integrations.jenkins import JenkinsClient, JenkinsConfig
+        from integrations.jenkins import JenkinsClient, JenkinsConfig
         from .utilities.audit import log_build_trigger
 
         # Create client from config
@@ -233,7 +233,7 @@ class CICDAgent(BaseAgent):
         Returns:
             AgentResult with upload details including checksums
         """
-        from ..integrations.artifactory import ArtifactoryClient, ArtifactoryConfig
+        from integrations.artifactory import ArtifactoryClient, ArtifactoryConfig
         from .utilities.audit import log_artifact_upload
 
         # Create client from config

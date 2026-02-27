@@ -22,8 +22,12 @@ dev = [
 ]
 
 [project.scripts]
-claude-enterprise-sdk = "claude_enterprise_sdk.cli:main"
+claude-enterprise-sdk = "cli:main"
 
-[tool.setuptools]
-packages = ["claude_enterprise_sdk", "claude_enterprise_sdk.agents", "claude_enterprise_sdk.agents.utilities", "claude_enterprise_sdk.prompts", "claude_enterprise_sdk.reusable_components", "claude_enterprise_sdk.shared_context"]
-package-dir = {"claude_enterprise_sdk" = "."}
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+exclude = ["docs*", "devai.egg-info*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.md", "*.txt"]

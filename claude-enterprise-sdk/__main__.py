@@ -1,6 +1,6 @@
-"""Allow running as: python -m claude_enterprise_sdk"""
+"""Allow running as: python -m claude-enterprise-sdk"""
 
-from claude_enterprise_sdk.cli import main
+from cli import main
 
 if __name__ == "__main__":
     main()

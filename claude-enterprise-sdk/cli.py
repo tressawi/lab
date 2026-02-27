@@ -27,11 +27,11 @@ import re
 import sys
 from pathlib import Path
 
-from claude_enterprise_sdk.agents.dev_agent import DevAgent
-from claude_enterprise_sdk.agents.test_agent import TestAgent
-from claude_enterprise_sdk.agents.cyber_agent import CyberAgent
-from claude_enterprise_sdk.agents.cicd_agent import CICDAgent, Environment
-from claude_enterprise_sdk.pipeline import DevTestPipeline, FullCICDPipeline
+from agents.dev_agent import DevAgent
+from agents.test_agent import TestAgent
+from agents.cyber_agent import CyberAgent
+from agents.cicd_agent import CICDAgent, Environment
+from pipeline import DevTestPipeline, FullCICDPipeline
 
 
 def parse_agent_mention(task: str) -> tuple[str, str]:

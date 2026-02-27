@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Optional, AsyncIterator
 from pathlib import Path
 
-from ..shared_context.store import ContextStore, TaskContext
+from shared_context.store import ContextStore, TaskContext
 from .utilities.audit import log_agent_start, log_agent_complete
 
 

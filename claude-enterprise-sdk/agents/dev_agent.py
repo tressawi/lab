@@ -4,9 +4,9 @@ from __future__ import annotations
 from typing import Optional
 
 from .base import BaseAgent, AgentResult
-from ..prompts.system import DEV_SYSTEM_PROMPT
-from ..prompts.tasks import build_task_prompt, build_design_prompt
-from ..reusable_components import ComponentLibrary
+from prompts.system import DEV_SYSTEM_PROMPT
+from prompts.tasks import build_task_prompt, build_design_prompt
+from reusable_components import ComponentLibrary
 
 
 class DevAgent(BaseAgent):

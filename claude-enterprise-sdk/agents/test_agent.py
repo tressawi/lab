@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Optional
 
 from .base import BaseAgent, AgentResult
-from ..prompts.tasks import build_task_prompt
+from prompts.tasks import build_task_prompt
 
 
 TEST_SYSTEM_PROMPT = """You are a senior QA engineer and test automation specialist.
