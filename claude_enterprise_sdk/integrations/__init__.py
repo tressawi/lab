@@ -1,4 +1,4 @@
-"""External integrations for DevAI."""
+"""External integrations for Claude Enterprise SDK."""
 
 from .jenkins import (
     JenkinsClient,

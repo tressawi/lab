@@ -1,4 +1,4 @@
-# DevAI Dependencies
+# Claude Enterprise SDK Dependencies
 
 # Claude Code SDK - Core agent functionality
 claude-code-sdk>=0.1.0

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The CI/CD Agent is the 5th agent in the DevAI pipeline, responsible for Jenkins builds, Artifactory artifact management, and deployments.
+The CI/CD Agent is the 5th agent in the Claude Enterprise SDK pipeline, responsible for Jenkins builds, Artifactory artifact management, and deployments.
 
 ```
 Design → Dev → Test → Cyber → CI/CD
@@ -126,12 +126,12 @@ class ArtifactoryClient:
 ```bash
 # Jenkins
 JENKINS_URL=https://jenkins.company.com
-JENKINS_USERNAME=devai-service-account
+JENKINS_USERNAME=claude-enterprise-sdk-service-account
 JENKINS_API_TOKEN=<secret>
 
 # Artifactory
 ARTIFACTORY_URL=https://artifactory.company.com
-ARTIFACTORY_USERNAME=devai-service-account
+ARTIFACTORY_USERNAME=claude-enterprise-sdk-service-account
 ARTIFACTORY_API_KEY=<secret>
 ARTIFACTORY_REPOSITORY=libs-release-local
 
@@ -147,13 +147,13 @@ PROD_DUAL_APPROVAL=true
 
 ```bash
 # Pipeline with staging deployment
-devai --pipeline --task "Add feature" --deploy staging
+claude-enterprise-sdk --pipeline --task "Add feature" --deploy staging
 
 # Production deployment (dual approval)
-devai --pipeline --task "Release v1.2" --deploy prod
+claude-enterprise-sdk --pipeline --task "Release v1.2" --deploy prod
 
 # Rollback
-devai --rollback --deploy prod --artifact-version 1.0.141
+claude-enterprise-sdk --rollback --deploy prod --artifact-version 1.0.141
 ```
 
 ---

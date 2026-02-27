@@ -1,4 +1,4 @@
-"""Configuration for DevAI."""
+"""Configuration for Claude Enterprise SDK."""
 
 import os
 from pathlib import Path
@@ -102,11 +102,11 @@ class Config:
     def from_env(cls) -> "Config":
         """Load configuration from environment variables."""
         return cls(
-            store_path=os.getenv("DEVAI_STORE_PATH", "./context_store"),
-            default_working_dir=os.getenv("DEVAI_WORKING_DIR", "."),
-            default_agent=os.getenv("DEVAI_DEFAULT_AGENT", "dev"),
-            audit_enabled=os.getenv("DEVAI_AUDIT_ENABLED", "true").lower() == "true",
-            log_level=os.getenv("DEVAI_LOG_LEVEL", "INFO"),
+            store_path=os.getenv("CLAUDE_SDK_STORE_PATH", "./context_store"),
+            default_working_dir=os.getenv("CLAUDE_SDK_WORKING_DIR", "."),
+            default_agent=os.getenv("CLAUDE_SDK_DEFAULT_AGENT", "dev"),
+            audit_enabled=os.getenv("CLAUDE_SDK_AUDIT_ENABLED", "true").lower() == "true",
+            log_level=os.getenv("CLAUDE_SDK_LOG_LEVEL", "INFO"),
             jenkins=JenkinsConfig.from_env(),
             artifactory=ArtifactoryConfig.from_env(),
             deployment=DeploymentConfig.from_env(),

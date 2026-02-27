@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-DevAI - AI Development Agent CLI
+Claude Enterprise SDK - AI Development Agent CLI
 
 Usage:
     # Interactive mode (default)
-    devai
-    devai --dir /path/to/project
+    claude-enterprise-sdk
+    claude-enterprise-sdk --dir /path/to/project
 
     # Use @agent mentions to select agents:
     #   > @test Generate comprehensive tests
@@ -13,12 +13,12 @@ Usage:
     #   > @dev Fix the login bug        (or just type without prefix)
 
     # One-shot mode
-    devai --task "@test Generate tests" --dir /path/to/project
-    devai --task "@cyber Security audit" --dir /path/to/project
-    devai --task "Fix login bug" --type bugfix
+    claude-enterprise-sdk --task "@test Generate tests" --dir /path/to/project
+    claude-enterprise-sdk --task "@cyber Security audit" --dir /path/to/project
+    claude-enterprise-sdk --task "Fix login bug" --type bugfix
 
     # Pipeline mode (Dev -> Test with approvals)
-    devai --pipeline --task "Add user authentication"
+    claude-enterprise-sdk --pipeline --task "Add user authentication"
 """
 
 import asyncio
@@ -27,11 +27,11 @@ import re
 import sys
 from pathlib import Path
 
-from devai.agents.dev_agent import DevAgent
-from devai.agents.test_agent import TestAgent
-from devai.agents.cyber_agent import CyberAgent
-from devai.agents.cicd_agent import CICDAgent, Environment
-from devai.pipeline import DevTestPipeline, FullCICDPipeline
+from claude_enterprise_sdk.agents.dev_agent import DevAgent
+from claude_enterprise_sdk.agents.test_agent import TestAgent
+from claude_enterprise_sdk.agents.cyber_agent import CyberAgent
+from claude_enterprise_sdk.agents.cicd_agent import CICDAgent, Environment
+from claude_enterprise_sdk.pipeline import DevTestPipeline, FullCICDPipeline
 
 
 def parse_agent_mention(task: str) -> tuple[str, str]:
@@ -67,7 +67,7 @@ async def run_task(args: argparse.Namespace) -> int:
     }
 
     print(f"\n{'='*60}")
-    print(f"DevAI - {args.type.upper()} Task")
+    print(f"Claude Enterprise SDK - {args.type.upper()} Task")
     print(f"Working directory: {args.dir}")
     print(f"{'='*60}\n")
 
@@ -106,7 +106,7 @@ async def run_test_task(args: argparse.Namespace, task: str) -> int:
     agent = TestAgent(store_path=args.store)
 
     print(f"\n{'='*60}")
-    print("DevAI - TEST AGENT")
+    print("Claude Enterprise SDK - TEST AGENT")
     print(f"Working directory: {args.dir}")
     print(f"{'='*60}\n")
 
@@ -137,7 +137,7 @@ async def run_cyber_task(args: argparse.Namespace, task: str) -> int:
     agent = CyberAgent(store_path=args.store)
 
     print(f"\n{'='*60}")
-    print("DevAI - CYBER AGENT")
+    print("Claude Enterprise SDK - CYBER AGENT")
     print(f"Working directory: {args.dir}")
     print(f"{'='*60}\n")
 
@@ -177,7 +177,7 @@ async def run_cicd_task(args: argparse.Namespace, task: str) -> int:
     agent = CICDAgent(store_path=args.store)
 
     print(f"\n{'='*60}")
-    print("DevAI - CI/CD AGENT")
+    print("Claude Enterprise SDK - CI/CD AGENT")
     print(f"Working directory: {args.dir}")
     print(f"{'='*60}\n")
 
@@ -220,7 +220,7 @@ async def run_pipeline(args: argparse.Namespace) -> int:
         pipeline = DevTestPipeline(store_path=args.store)
 
     print(f"\n{'='*60}")
-    print("DevAI - PIPELINE MODE")
+    print("Claude Enterprise SDK - PIPELINE MODE")
     print(f"{'='*60}")
     print(f"Task: {args.task}")
     print(f"Type: {args.type}")
@@ -286,7 +286,7 @@ async def run_interactive(args: argparse.Namespace) -> int:
     pipeline = DevTestPipeline(store_path=args.store)
 
     print(f"\n{'='*60}")
-    print("DevAI - Interactive Mode")
+    print("Claude Enterprise SDK - Interactive Mode")
     print(f"{'='*60}")
     print(f"Working directory: {args.dir}")
     print()
@@ -391,13 +391,13 @@ async def run_interactive(args: argparse.Namespace) -> int:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="DevAI - AI Development Agent with Multi-Agent Pipeline",
+        description="Claude Enterprise SDK - AI Development Agent with Multi-Agent Pipeline",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Interactive mode (default - just run devai)
-  devai
-  devai --dir /path/to/project
+  # Interactive mode (default - just run claude-enterprise-sdk)
+  claude-enterprise-sdk
+  claude-enterprise-sdk --dir /path/to/project
 
   # In interactive mode, use @agent mentions:
   #   > @test Generate comprehensive tests
@@ -407,21 +407,21 @@ Examples:
   #   > Fix the login bug              (defaults to @dev)
 
   # One-shot mode with @agent mentions
-  devai --task "@test Generate tests" --dir /path/to/project
-  devai --task "@cyber Security audit" --dir /path/to/project
-  devai --task "@cicd Trigger build" --dir /path/to/project
-  devai --task "Add feature" --type feature
+  claude-enterprise-sdk --task "@test Generate tests" --dir /path/to/project
+  claude-enterprise-sdk --task "@cyber Security audit" --dir /path/to/project
+  claude-enterprise-sdk --task "@cicd Trigger build" --dir /path/to/project
+  claude-enterprise-sdk --task "Add feature" --type feature
 
   # Pipeline mode - Dev -> approval -> Test -> approval
-  devai --pipeline --task "Add email validation" --type feature
-  devai --pipeline --task "Add logging" --auto-approve
+  claude-enterprise-sdk --pipeline --task "Add email validation" --type feature
+  claude-enterprise-sdk --pipeline --task "Add logging" --auto-approve
 
   # Full CI/CD Pipeline - includes build and deployment
-  devai --pipeline --task "Add feature" --deploy staging
-  devai --pipeline --task "Release v1.2" --deploy prod --jenkins-job my-app-build
+  claude-enterprise-sdk --pipeline --task "Add feature" --deploy staging
+  claude-enterprise-sdk --pipeline --task "Release v1.2" --deploy prod --jenkins-job my-app-build
 
   # Rollback
-  devai --task "@cicd Rollback to 1.0.141" --deploy prod --artifact-version 1.0.141
+  claude-enterprise-sdk --task "@cicd Rollback to 1.0.141" --deploy prod --artifact-version 1.0.141
         """
     )
 

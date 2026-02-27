@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "claude-enterprise-sdk"
+version = "0.1.0"
+description = "Claude Enterprise SDK - Multi-agent system for software development using Claude SDK"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+dependencies = [
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+sdk = [
+    "claude-code-sdk>=0.0.20",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+
+[project.scripts]
+claude-enterprise-sdk = "claude_enterprise_sdk.cli:main"
+
+[tool.setuptools]
+packages = ["claude_enterprise_sdk", "claude_enterprise_sdk.agents", "claude_enterprise_sdk.agents.utilities", "claude_enterprise_sdk.prompts", "claude_enterprise_sdk.reusable_components", "claude_enterprise_sdk.shared_context"]
+package-dir = {"claude_enterprise_sdk" = "."}

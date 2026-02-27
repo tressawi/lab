@@ -1,4 +1,4 @@
-# DevAI: AI-Assisted Software Development Platform
+# Claude Enterprise SDK: AI-Assisted Software Development Platform
 ## Executive Proposal for Financial Services
 
 ---

@@ -1,14 +1,14 @@
-# DevAI: Technical Overview for Executive Leadership
+# Claude Enterprise SDK: Technical Overview for Executive Leadership
 
 ## What We Built
 
-DevAI is a **multi-agent AI development system** that automates software development workflows while maintaining human oversight and control. It orchestrates specialized AI agents through a governed pipeline, ensuring quality, security, and compliance at every step.
+Claude Enterprise SDK is a **multi-agent AI development system** that automates software development workflows while maintaining human oversight and control. It orchestrates specialized AI agents through a governed pipeline, ensuring quality, security, and compliance at every step.
 
 ---
 
 ## The Core Innovation: Claude Code SDK
 
-At the heart of DevAI is Anthropic's **Claude Code SDK**—a programmatic interface that gives us direct access to Claude's coding capabilities. This is the same AI engine that powers Claude Code (Anthropic's developer tool), now available as a building block for custom systems.
+At the heart of Claude Enterprise SDK is Anthropic's **Claude Code SDK**—a programmatic interface that gives us direct access to Claude's coding capabilities. This is the same AI engine that powers Claude Code (Anthropic's developer tool), now available as a building block for custom systems.
 
 ### How It Works
 
@@ -61,7 +61,7 @@ Developer uses Copilot → Manual code review → Separate security scan → Man
 ### After: Orchestrated AI Pipeline
 
 ```
-DevAI Pipeline (Automated, Governed, Auditable)
+Claude Enterprise SDK Pipeline (Automated, Governed, Auditable)
 
   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
   │  DESIGN  │───►│   DEV    │───►│   TEST   │───►│  CYBER   │
@@ -197,7 +197,7 @@ Every action is logged:
 
 ## Technical Foundation: Two SDK Options
 
-DevAI is built on a provider-agnostic architecture. Today, two production-grade SDKs exist for building agentic coding systems:
+Claude Enterprise SDK is built on a provider-agnostic architecture. Today, two production-grade SDKs exist for building agentic coding systems:
 
 | SDK | Status | Provider |
 |-----|--------|----------|
@@ -321,7 +321,7 @@ await session.send({"prompt": "Implement user authentication"})
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    DevAI Orchestration                       │
+│                    Claude Enterprise SDK Orchestration                       │
 │                                                              │
 │  • Design-first workflow                                     │
 │  • Component library                                         │
@@ -352,7 +352,7 @@ await session.send({"prompt": "Implement user authentication"})
 
 ---
 
-## Summary: What DevAI Delivers
+## Summary: What Claude Enterprise SDK Delivers
 
 | Capability | How |
 |------------|-----|
@@ -367,14 +367,14 @@ await session.send({"prompt": "Implement user authentication"})
 
 ## Key Takeaway
 
-DevAI is not "AI writing code unsupervised." It's a **governed pipeline** where:
+Claude Enterprise SDK is not "AI writing code unsupervised." It's a **governed pipeline** where:
 
 - AI agents handle routine work with superhuman speed
 - Humans retain control over all significant decisions
 - Security is enforced automatically, not hoped for
 - Every action is auditable for compliance
 
-**The Claude Code SDK gives us the building blocks. DevAI adds the governance.**
+**The Claude Code SDK gives us the building blocks. Claude Enterprise SDK adds the governance.**
 
 ---
 
