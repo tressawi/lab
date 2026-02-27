@@ -1,0 +1,27 @@
+{
+  "name": "@enterprise/architecture-standards-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for enterprise architecture, security, and coding standards from Confluence/SharePoint",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "architecture-standards-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "architecture",
+    "standards",
+    "confluence",
+    "sharepoint"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "name": "@enterprise/claude-enterprise-agents",
+  "version": "1.0.0",
+  "description": "Enterprise-grade Claude Code agents for SDLC - dev, test, cyber, and CI/CD workflows with approval gates",
+  "type": "module",
+  "main": "scripts/install.js",
+  "bin": {
+    "claude-enterprise-agents": "./scripts/install.js"
+  },
+  "scripts": {
+    "install-agents": "node scripts/install.js",
+    "postinstall": "node scripts/install.js",
+    "start:architecture-standards": "node mcp-servers/architecture-standards/index.js",
+    "start:cicd": "node mcp-servers/cicd-integration/index.js",
+    "start:approval": "node mcp-servers/approval-gateway/index.js"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "enterprise",
+    "agents",
+    "mcp",
+    "sdlc",
+    "devops",
+    "jenkins",
+    "artifactory"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    ".claude/",
+    "mcp-servers/",
+    "scripts/",
+    "CLAUDE.md"
+  ]
+}
